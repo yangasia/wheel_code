@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+  <meta charset="ustf-8" />
+  <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+  <script type="x-template" id=datetimes_select>
+      <div class="datetimes_select" :style="boxstyle">
+        <div class="datebox" v-show="!istimeshow">
+          <div class="datehead">
+            <img src="./arrow_l2.png" alt="" @click="click_preyear">
+            <img src="./arrowup_l.png"" alt="" @click="click_premonth">
+            <span>[[inside_year]]年[[inside_month]]月</span>
+            <img src="./arrowup_r.png"" alt="" @click="click_nextmonth">
+            <img src="./arrow_r.png"" alt="" @click="click_nextyear">
+          </div>
+          <ul>
+            <li class="date_grey">日</li>
+            <li class="date_grey">一</li>
+            <li class="date_grey">二</li>
+            <li class="date_grey">三</li>
+            <li class="date_grey">四</li>
+            <li class="date_grey">五</li>
+            <li class="date_grey">六</li>
+            <li v-for="item in allDate" :class="{date_grey:checkgrey(item), date_today:checktoday(item), date_select:checkselectdate(item)}"  
+            @click="click_date(item)" :key=item.id>[[item.getDate()]]</li>
+          </ul>
+          <div class="datebt">
+            <div @click="click_gotoday">此刻</div>
+            <div v-if="datesmode=='time'" class="bluecolor" @click="click_selecttime">选择时间</div>
+          </div>
+        </div>
+        <div class="timebox" v-if="datesmode=='time'" v-show="istimeshow">
+          <div class="timehead">
+            <span class="timedate">[[inside_year]]年[[inside_month]]月[[inside_date]]日</span>
+            <span class="timeover">[[addprezero(inside_hour)]]<span>:</span>[[addprezero(inside_minute)]]</span>
+          </div>
+          <div class="timeshm">
+            <ul>
+              <li v-for="item in hours" :class="{current_hour:checkhour(item), time_select:check_selecthour(item)}" @click="click_hour(item)" :key="item.id">[[item]]</li>
+            </ul>
+            <ul>
+              <li v-for="item in minutes" :class="{time_select:check_selectminute(item)}" @click="click_minute(item)" :key="item.id">[[item]]</li>
+            </ul>
+          </div>
+          <div class="timebt">
+            <div class="suretime" @click="click_goctime">此刻</div>
+            <div class="seldate" @click="click_selectdate">选择日期</div>
+            <span></span>
+            <div class="sureover" @click="click_timesure">确定</div>
+          </div>
+        </div>
+      </div>
+  </script>
+  <style>
+    .datetimes_select {
+      position: relative;
+      cursor: default;
+      display: flex;
+    }
+    .datetimes_select *{
+      -moz-user-select:none;
+      -ms-user-select: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    .datetimes_select .datebox {
+      width:288px;
+      background:rgba(255,255,255,1);
+      box-shadow:0px 4px 16px 0px rgba(199,203,214,1);
+    }
+    .datetimes_select .datehead {
+      padding-top: 24px;
+      margin: 0 54px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .datetimes_select .datehead img{
+      width: 12px;
+      height: 12px;
+      cursor: pointer;
+    }
+    .datetimes_select .datehead span{
+      color: #2E2E35;
+      font-size:14px;
+      font-weight:bold;
+    }
+    .datetimes_select .datebox ul{
+      margin: 12px  32px 0 32px;
+      display: flex;
+      flex-wrap: wrap;
+      list-style: none;
+      padding-left: 0px;
+      padding-bottom: 15px;
+    }
+    .datetimes_select .datebox ul li{
+      width: 24px;
+      line-height: 24px;
+      text-align: center;
+      margin: 5px 4px;
+      font-weight:bold;
+      font-size: 12px;
+      border-radius:6px;
+      cursor: pointer;
+    }
+    .datetimes_select .datebox ul .date_grey{
+      color: #CACCD6;
+    }
+    .datetimes_select .datebox ul .date_today{
+      color: #335CFF;
+      background-color: #EDF9FF;
+    }
+    .datetimes_select .datebox ul .date_select{
+      color: #FFFFFF;
+      background-color: #335CFF;
+    }
+    .datetimes_select .datebox .datebt{
+      border-top: 1px solid #EDEEF2;
+      display: flex;
+      height: 60px;
+      justify-content: space-around;
+      align-items: center;
+    }
+    .datetimes_select .datebox .datebt div{
+      font-size:12px;
+      color: #5C5C64;
+    }
+    .datetimes_select .bluecolor{
+      color: #335CFF !important;
+    }
+    .datetimes_select .timebox{
+      width:288px;
+      background:rgba(255,255,255,1);
+      box-shadow:0px 4px 16px 0px rgba(199,203,214,1);
+      cursor: default;
+    }
+    .datetimes_select .timebox .timehead {
+      padding-top: 24px;
+      padding-bottom: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-bottom: 1px solid #EDEEF2;
+    }
+    .datetimes_select .timebox .timehead .timedate{
+      color: #CACCD6;
+      font-size: 14px;
+      margin-right: 16px;
+    }
+    .datetimes_select .timebox .timehead .timeover{
+      color: #2E2E35;
+      font-size: 14px;
+      font-weight: bold;
+      display: flex;
+    }
+    .datetimes_select .timebox .timehead .timeover span{
+      margin: 0 5px;
+      text-align: center;
+    }
+    .datetimes_select .timebox .timeshm {
+      height: 240px;
+      display: flex;
+    }
+    .datetimes_select .timebox .timeshm ul{
+      width: 50%;
+      list-style: none;
+      height: 240px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow: auto;
+      margin: 0 4px;
+      padding: 0;
+    }
+    .datetimes_select .timebox .timeshm ul:first-child{
+      margin-right: 0;
+    }
+    .datetimes_select .timebox .timeshm ul:last-child{
+      border-left: 1px solid #EDEEF2;
+    }
+    .datetimes_select .timebox .timeshm ul::-webkit-scrollbar {
+        /*滚动条整体*/
+        width: 12px;     /*高宽分别对应横竖滚动条的尺寸*/
+        height: 1px;
+    }
+    .datetimes_select .timebox .timeshm ul::-webkit-scrollbar-thumb {
+        /*滚动块*/
+        border-radius: 4px;
+        -webkit-box-shadow: inset 0 0 0 rgba(0,0,0,0.2);
+        background: #E0E0EB;
+    }
+    .datetimes_select .timebox .timeshm ul li{
+      width: 32px;
+      line-height:24px;
+      border-radius:6px;
+      text-align: center;
+      color: #9C9DA7;
+      cursor: pointer;
+      margin: 2px 0;
+    }
+    .datetimes_select .timebox ul .current_hour{
+      color: #335CFF;
+      background-color: #EDF9FF;
+    }
+    .datetimes_select .timebox ul .time_select{
+      color: #FFFFFF !important;
+      background-color: #335CFF;
+    }
+    .datetimes_select .timebox .timebt{
+      border-top: 1px solid #EDEEF2;
+      display: flex;
+      height: 60px;
+      align-items: center;
+      font-size:12px;
+      color: #5C5C64;
+    }
+    .datetimes_select .timebox .timebt .suretime{
+      margin-left: 52px;
+      cursor: pointer;
+    }
+    .datetimes_select .timebox .timebt .seldate{
+      margin-left: 52px;
+      cursor: pointer;
+    }
+    .datetimes_select .timebox .timebt span{
+      margin: 0 17px;
+      border-left: 1px solid #EDEEF2;
+      height: 8px;
+    }
+    .datetimes_select .timebox .timebt .sureover{
+      color: #335CFF;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<style>
+</style>
+<body>
+  <div id="root" style="margin-top: 20px;">
+    <div @click="time1.iseject=!time1.iseject" >[[time1.select]]</div>
+    <datetimes_select v-show="time1.iseject" :dateresult="time1.select" :iseject="time1.iseject" @setdateresult="setselect" @close="closedate1"></datetimes_select>
+    <div @click="time2.iseject=!time2.iseject">[[time2.select]]</div>
+    <datetimes_select datesmode='time' :dateresult="time2.select" :iseject="time2.iseject" :boxstyle="{marginTop:'20px'}" v-show="time2.iseject" @setdateresult="setselect1" @close="closedate2"></datetimes_select>
+  </div>
+</body>
+<script>
+  Vue.component('datetimes_select', {
+    delimiters: ['[[', ']]'],
+    template: '#datetimes_select',
+    props: {
+      boxstyle: {//容器样式
+          type: Object,
+          default: function () {
+              return {};
+          },
+      },
+      datesmode:{
+        type:String,
+        default:'date',
+        validator:function(value){
+          return ['date','time'].indexOf(value) !== -1
+        }
+      },
+      dateresult:{
+        type:[String,Date],
+        default:'null',
+        validator:function(value){
+          if(value=='null' || value.constructor.name == 'Date'){
+            return true;
+          }
+          else{
+            return false;
+          }
+        }
+      },
+      iseject:{//控制隐藏和显示
+        type:Boolean,
+      }
+    },
+    model: {
+    },
+    data: function () {
+      console.log('data');
+      return ({
+        inside_year:new Date().getFullYear(),
+        inside_month:new Date().getMonth()+1,//1---12
+        inside_date:new Date().getDate(),
+        inside_hour:new Date().getHours(),
+        inside_minute:new Date().getMinutes(),
+        last_hour:0,
+        last_minute:0,
+        minutes:[],
+        hours:[],
+        istimeshow:false,
+        today:new Date(new Date().getFullYear(),new Date().getMonth(),new Date().getDate()),
+        select_date:null,
+        oneDateLong:24*60*60*1000,
+      });
+    },
+    methods: {//时间相关不能直接设置时间对象，vue不能观察到变化
+      checkgrey:function(date){
+        if(date.getMonth()==this.inside_month-1){
+          return false;
+        }
+        else {
+          return true;
+        }
+      },
+      checktoday:function(date){
+        if(date.toLocaleDateString() == this.today.toLocaleDateString()){
+          return true;
+        }
+        else {
+          return false;
+        }
+      },
+      checkselectdate:function(date){
+        if(this.select_date && date.toLocaleDateString() == this.select_date.toLocaleDateString()){
+          return true;
+        }
+        else {
+          return false;
+        }
+      },
+      click_date:function(date){
+        this.select_date = new Date(date.getFullYear(), date.getMonth(), date.getDate(), this.last_hour, this.last_minute);
+      },
+      click_premonth:function(){
+        if(this.inside_month==1){
+          this.inside_month=12;
+          this.inside_year--;
+        }
+        else{
+          this.inside_month--
+        }
+      },
+      click_nextmonth:function(){
+        if(this.inside_month==12){
+          this.inside_month=1;
+          this.inside_year++;
+        }
+        else{
+          this.inside_month++
+        }
+      },
+      click_preyear:function(){
+        this.inside_year--;
+      },
+      click_nextyear:function(){
+        this.inside_year++;
+      },
+      click_gotoday:function(){
+        var date = new Date();
+        this.select_date = new Date(date.getFullYear(), date.getMonth(), date.getDate(), this.last_hour, this.last_minute);
+      },
+      click_goctime:function(){//选择当前时间
+        var date = new Date();
+        this.select_date = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes());
+      },
+      click_selecttime:function(){
+        var date = new Date();
+        if(this.select_date){
+
+        }
+        else{
+          this.select_date = new Date(date.getFullYear(), date.getMonth(), date.getDate(), this.last_hour, this.last_minute);
+        }
+        this.istimeshow = true;
+      },
+      click_selectdate:function(){
+        this.istimeshow = false;
+      },
+      addprezero:function(v){
+        if(v<10){
+          return '0'+v;
+        }
+        else{
+          return v;
+        }
+      },
+      checkhour:function(hour){
+        if(Number(hour)==new Date().getHours()){
+          return true;
+        }
+        else{
+          return false;
+        }
+      },
+      click_hour:function(hour){
+        var date = this.select_date;
+        this.select_date = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hour, date.getMinutes());
+      },
+      click_minute:function(minute){
+        var date = this.select_date;
+        this.select_date = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), minute);
+      },
+      check_selecthour:function(hour){
+        if(Number(hour)==this.inside_hour){
+          return true;
+        }
+        else{
+          return false;
+        }
+      },
+      check_selectminute:function(minute){
+        if(Number(minute)==this.inside_minute){
+          return true;
+        }
+        else{
+          return false;
+        }
+      },
+      click_timesure:function(){
+        this.$emit('setdateresult',this.select_date);
+        this.$emit('close');
+      }
+    },
+    watch: {
+      select_date:{
+        handler:function(date){//改变时间不能通过时间对象的set方法；
+          if(date){
+            this.inside_year=date.getFullYear();
+            this.inside_month=date.getMonth()+1;
+            if(this.datesmode=='time'){
+              this.last_hour=date.getHours();
+              this.last_minute=date.getMinutes();
+              this.inside_date=date.getDate();
+              this.inside_hour=date.getHours();
+              this.inside_minute=date.getMinutes();
+            }
+            else{
+              this.$emit('setdateresult',date);
+              this.$emit('close');
+            }
+          }
+        },
+        deep: true,
+      },
+      dateresult:{
+        handler:function(date){
+          this.select_date = date;
+        },
+        deep:true,
+      },
+      iseject:function(v){
+        if(v){
+          this.select_date = this.dateresult;
+          this.istimeshow = false;
+        }
+      }
+    },
+    computed: {
+      first_day:function(){//每个月第一天
+        return new Date(this.inside_year, this.inside_month-1, 1);
+      },
+      last_day:function(){//每月最后一天
+        return new Date(this.inside_year, this.inside_month, 0);
+      },
+      allDate:function(){
+        var all = [];
+        datenum = this.last_day.getDate();
+        for(var i = 1;i<=datenum;i++){
+          all.push(new Date(this.inside_year, this.inside_month-1, i))
+        }
+        prenum = this.first_day.getDay();
+        if(prenum){
+          for(var i = 1 ;i<=prenum;i++){
+            all.unshift(new Date(this.first_day.getTime()-i*this.oneDateLong))
+          }
+        }
+        afternum = 6-this.last_day.getDay();
+        if(afternum){
+          for(var i = 1 ;i<=afternum;i++){
+            all.push(new Date(this.last_day.getTime()+i*this.oneDateLong))
+          }
+        }
+        if(all.length=35){
+          var temp = all[34];
+          for(var i = 1;i<=7;i++){
+            all.push(new Date(temp.getTime()+i*this.oneDateLong))
+          }
+        }
+        if(all.length==28){
+          var temp = all[27];
+          for(var i = 1;i<=14;i++){
+            all.push(new Date(temp.getTime()+i*this.oneDateLong))
+          }
+        }
+        return all;
+      }
+    },
+    updated: function () {
+    },
+    created: function () {
+      if(this.dateresult != 'null'){
+        this.select_date = this.dateresult;
+      }
+      if(this.datesmode=='time'){
+        for(var i = 0;i<24;i++){
+          this.hours.push(i);
+        }
+        for(var i = 0;i<60;i++){
+          this.minutes.push(i);
+        }
+      }
+    },
+  })
+  var root = new Vue({
+    el: '#root',
+    delimiters: ['[[', ']]'],
+    data() {
+      return ({
+        time1:{
+          select:'null',
+          iseject:false,
+        },
+        time2:{
+          select:'null',
+          iseject:false
+        },
+      });
+    },
+    methods: {
+      setselect:function(date){
+          this.time1.select = date;
+      },
+      setselect1:function(date){
+        this.time2.select = date;
+      },
+      closedate1:function(){
+        this.time1.iseject =false;
+      },
+      closedate2:function(){
+        this.time2.iseject =false;
+      },
+    },
+  });
+</script>
+
+</html>
